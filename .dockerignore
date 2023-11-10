@@ -1,0 +1,11 @@
+# Ignore everything
+**
+
+# Exclude folders relevant for build
+!client
+!device
+!lib
+!config.py
+!feature.yaml
+!requirements.txt
+!main.py

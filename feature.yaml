@@ -1,0 +1,12 @@
+name: "Robo"
+namespaceID: "demo:robot"
+properties:
+  position:
+    - x = 0
+    - y = 0
+    - z = 0
+  type: "UNDEFINED"
+  location: "MARS"
+  status:
+    - active: false
+    - inMotion: false

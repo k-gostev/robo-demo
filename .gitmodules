@@ -1,0 +1,3 @@
+[submodule "lib/ditto-clients"]
+	path = lib/ditto-clients
+	url = https://github.com/eclipse-ditto/ditto-clients-python

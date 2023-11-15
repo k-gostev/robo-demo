@@ -28,13 +28,17 @@ def main():
 
 
 def paho_on_connect(client, userdata, flags, rc):
+
     global ditto_client
+
     f = feature.from_yaml("feature.yaml")
     device = Device(f, config.robot_hostname, config.robot_port, config.robot_default_process_id)
     device.set_refresh_timeout(config.robot_refresh_timeout)
     ditto_client = dc.DittoClient(paho_client=client, feature=f, event_handler=device)
     f.set_change_handler(ditto_client)
+
     device.run()
+
     logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
     ditto_client.enable_logger(True, logger)

@@ -1,6 +1,7 @@
 # Python 3 server example
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import time
+from datetime import datetime
+import json
 
 hostName = "localhost"
 serverPort = 3000
@@ -18,40 +19,7 @@ class MyServer(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
-        self.wfile.write(bytes("""{
-    "joints": {
-        "angle": null,
-        "velocity": null,
-        "torque": null,
-        "temperature": null
-    },
-    "position": {
-        "robotSpace": {
-            "XYZRPW": null
-        },
-        "taskSpace": {
-            "XYZRPW": null
-        }
-    },
-    "enabled": false,
-    "mastered": false,
-    "hasErrors": true,
-    "safety": {
-        "emergencyStopTP": false,
-        "emergencyStopExt": false,
-        "safeguardStop": false,
-        "dmsEngaged": false
-    },
-    "mode": 0,
-    "state": "",
-    "bastionConnection": {
-        "status": "",
-        "secondsConnected": 0
-    },
-    "system": {
-        "clock": "2023-09-13T20:55:01Z"
-    }
-}""", "UTF-8"))
+        self.wfile.write(bytes(self.get_mock_content(), "UTF-8"))
 
     def do_POST(self):
         print(self.path)
@@ -64,9 +32,50 @@ class MyServer(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
-        self.wfile.write(bytes("{\"path\":" + self.path))
+
+        content = {
+            'path': self.path
+        }
+
+        self.wfile.write(bytes(json.dumps(content), 'UTF-8'))
         print("POST response sent")
 
+    def get_mock_content(self):
+        content = {
+            'joints': {
+                'angle': None,
+                'velocity': None,
+                'torque': None,
+                'temperature': None
+            },
+            'position': {
+                'robotSpace': {
+                    'XYZRPW': None
+                },
+                'taskSpace': {
+                    'XYZRPW': None
+                }
+            },
+            'enabled': False,
+            'mastered': False,
+            'hasErrors': True,
+            'safety': {
+                'emergencyStopTP': False,
+                'emergencyStopExt': False,
+                'safeguardStop': False,
+                'dmsEngaged': False
+            },
+            'mode': 0,
+            'state': 'STOPPED',
+            'bastionConnection': {
+                'status': '',
+                'secondsConnected': 0
+            },
+            'system': {
+                'clock': datetime.now().isoformat()
+            }
+        }
+        return json.dumps(content)
 
 if __name__ == "__main__":
     webServer = HTTPServer((hostName, serverPort), MyServer)

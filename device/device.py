@@ -1,5 +1,6 @@
 import logging
 import time
+import json
 
 from ditto.protocol.envelope import Envelope
 from client.feature import Feature
@@ -18,12 +19,15 @@ class Device:
 
     def on_message(self, request_id: str, message: Envelope):
         try:
+
             iterations = 1
             velocity = 1
             program_id = self.__default_program_id__
+
             self.log.info(f'MESSAGE {message.to_ditto_dict()}')
             self.log.info(f'MESSAGE VALUE {message.value}')
             self.log.info(f'MESSAGE VALUE KEYS {message.value.keys()}')
+
             if "iterations" in message.value.keys():
                 iterations = message.value["iterations"]
             if "velocity" in message.to_ditto_dict().keys():
@@ -43,11 +47,18 @@ class Device:
             self.log.error(e)
             return "{\"status\": \"FAILED WITH EXCEPTION\"}"
 
-        return '{\"status: \"SUCCESS\"'
+        return '{\"status: \"SUCCESS\"}'
 
     def run(self):
         t = Thread(target=self.refresh_state)
         t.start()
+
+    def get_properties_content(self, response):
+        content = response.text;
+        try:
+            return json.loads(content)
+        except:
+            return content;
 
     def refresh_state(self):
         while True:
@@ -57,11 +68,13 @@ class Device:
                 self.log.info(r.headers)
                 if r.status_code < 200 or r.status_code > 299:
                     return
-                self.__feature__.set_properties(str(r.content))
+
+                self.__feature__.set_properties(self.get_properties_content(r))
+
             except KeyboardInterrupt:
                 return
-            except Exception:
-                pass
+            except Exception as e:
+                print(e)
             time.sleep(int(self.__refresh_timeout__))
 
     def set_refresh_timeout(self, timeout):

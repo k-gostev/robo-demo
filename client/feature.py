@@ -1,4 +1,5 @@
 import yaml
+import config
 
 
 class Feature:
@@ -27,6 +28,9 @@ class Feature:
 
 def from_yaml(file):
     with open(file) as f:
+
         data_map = yaml.safe_load(f)
         print(data_map)
-        return Feature(name=data_map['name'], namespace_id=data_map['namespaceID'], properties=data_map['properties'])
+
+        namespace_id = data_map['namespaceID'].format(device_id=config.device_id)
+        return Feature(name=data_map['name'], namespace_id=namespace_id, properties=data_map['properties'])

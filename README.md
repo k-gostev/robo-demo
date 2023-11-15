@@ -3,7 +3,7 @@
 This is an adapter between a demo Robot API and a Ditto feature. This adapter is developed to be used with [Eclipse Kanto](https://eclipse.dev/kanto).
 When it is connected to the local MQTT broker that is being used by Kanto, a cloud connector of your choice will create a digital twin of the robot on the cloud backend.
 
-## Prerequisites: 
+## Prerequisites:
 1. Install dependencies using:
 
     ```commandline
@@ -17,15 +17,15 @@ When it is connected to the local MQTT broker that is being used by Kanto, a clo
     ```
 
 3. Install Eclipse Ditto
- 
+
     ```commandline
-    cd lib/ditto-clients && make install      
+    cd lib/ditto-clients && make install
     ```
 
 ## Build:
 Before building, you may need to change the platform to match your device.
 ```commandline
-docker build -t 'your repo'/robot-controller:'tag' .              
+docker build -t 'your repo'/robot-controller:'tag' .
 ```
 
 ## Deploy on Eclipse Kanto
@@ -39,7 +39,7 @@ kanto-cm start -n robot-controller
 Example using environment variable
 
 ```commandline
-kanto-cm create -n robot-controller --network host --e=ROBOT_HOSTNAME=roboendpoint docker.io/'your container repo'/robot-controller:0.0.1
+kanto-cm create -n robot-controller --network host --e=ROBOT_HOSTNAME=roboendpoint --e=DEVICE_ID="$FQ_DEVICE_ID" docker.io/'your container repo'/robot-controller:0.0.1
 ```
 
 ## Environment Variables
@@ -53,13 +53,14 @@ kanto-cm create -n robot-controller --network host --e=ROBOT_HOSTNAME=roboendpoi
 | ROBOT_HOSTNAME           | localhost | Hostname of the robot's http endpoint                      |
 | ROBOT_PORT               | 3000      | Port of the robot's http endpoint                          |
 | ROBOT_DEFAULT_PROCESS_ID | 1         | Default process which will be triggered on command         |
-|  ROBOT_REFRESH_TIMEOUT   | 60        | Refresh timeout on which the Ditto feature will be updated |
+| ROBOT_REFRESH_TIMEOUT    | 60        | Refresh timeout on which the Ditto feature will be updated |
+| DEVICE_ID    | demo:robot:1.0.0        | Device id which will be used in the robot's feature namespace |
 
 ## Command Format
 
 ```json
 {
-    "topic": "demo/robot/things/live/commands/request",
+    "topic": "demo/robot/things/live/messages/request",
     "headers": {
         "correlation-id": "test",
         "content-type": "application/json"

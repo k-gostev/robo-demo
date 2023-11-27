@@ -1,15 +1,21 @@
 name: "Robo"
 namespaceID: "{device_id}"
 properties:
+  joints:
+    angle: null
+    velocity: null
+    torque: null
+    power: [0, 0, 0, 0, 0, 0]
+    temperature: null
   position:
-    - x = 0
-    - y = 0
-    - z = 0
-  type: "UNDEFINED"
-  state: "UNDEFINED"
-  location: "MARS"
-  status:
-    - active: false
-    - inMotion: false
+    robotSpace:
+      XYZRPW: null
+    taskSpace:
+      XYZRPW: null
+  enabled: false
+  mastered: false
+  hasErrors: false
+  mode: 0
+  state: ""
   system:
     clock: "2023-09-13T20:55:01Z"

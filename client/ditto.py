@@ -22,12 +22,12 @@ class DittoClient(Client):
         self.__update_feature__()
 
     def __update_feature__(self):
+
         cmd = Command(NamespacedID().from_string(self.__feature__.get_namespace_id()))\
             .feature(feature_id=self.__feature__.get_name())\
             .twin() \
-            .modify(Feature()
+            .modify(Feature(properties=self.__feature__.get_properties())
                     .with_definition_from("kanto.demo:RoboDemo:1.0.0")
-                    .with_properties(properties=self.__feature__.get_properties())
                     .to_ditto_dict())
 
         self.send(cmd.envelope(response_required=False, content_type="application/json"))

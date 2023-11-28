@@ -43,10 +43,11 @@ class MyServer(BaseHTTPRequestHandler):
     def get_mock_content(self):
         content = {
             'joints': {
-                'angle': None,
+                'angle': [45, 45, 45, 45, 45, 45],
                 'velocity': None,
                 'torque': None,
-                'temperature': None
+                'power': [5.5, 5, 5, 6.6, 7.1, 5.9],
+                'temperature': [30, 30, 30, 30, 30, 30]
             },
             'position': {
                 'robotSpace': {
@@ -58,15 +59,15 @@ class MyServer(BaseHTTPRequestHandler):
             },
             'enabled': False,
             'mastered': False,
-            'hasErrors': True,
+            'hasErrors': False,
             'safety': {
                 'emergencyStopTP': False,
                 'emergencyStopExt': False,
                 'safeguardStop': False,
                 'dmsEngaged': False
             },
-            'mode': 0,
-            'state': 'STOPPED',
+            'mode': 1,
+            'state': 'WAITING',
             'bastionConnection': {
                 'status': '',
                 'secondsConnected': 0

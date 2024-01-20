@@ -1,6 +1,8 @@
 import logging
 import time
 import json
+import traceback
+
 import config
 import threading
 import datetime
@@ -131,9 +133,10 @@ class Device:
                 session_info.connection_inactivity_timeout = 2000  # (milliseconds)
                 error_callback = lambda kException: \
                     self.log.error("_________ callback error _________ {}".format(kException))
+                self.log.info("Creating transport")
                 transport = UDPTransport()
                 router = RouterClient(transport, error_callback)
-                transport.connect(config.robot_hostname, config.robot_port_udp)
+                transport.connect(config.robot_hostname, int(config.robot_port_udp))
 
                 self.log.info("Creating session for communication")
                 session_manager = SessionManager(router)
@@ -143,7 +146,7 @@ class Device:
                 # Call some RPC which requires a session
                 cyclic = BaseCyclicClient(router)
                 feedback = cyclic.RefreshFeedback()
-
+                self.log.info("feedback received {}".format(feedback))
                 session_manager.CloseSession()
                 transport.disconnect()
 
@@ -152,10 +155,10 @@ class Device:
                     'joints': {
                         'angle': [10, 45, 70, 107, 30, 240],
                         'velocity': [4.5, 2, 8, 3.6, 5.1, 7.9],
-                        'torque': [feedback.actuator[0].torque,
-                                   feedback.actuator[1].torque, feedback.actuator[2].torque,
-                                   feedback.actuator[3].torque, feedback.actuator[4].torque,
-                                   feedback.actuator[5].torque],
+                        'torque': [feedback.actuators[0].torque,
+                                   feedback.actuators[1].torque, feedback.actuators[2].torque,
+                                   feedback.actuators[3].torque, feedback.actuators[4].torque,
+                                   feedback.actuators[5].torque],
                         'power': [3.5, 5, 8, 6.6, 7.1, 5.9],
                         'temperature': [-5, 15, 30, 50, 65, 75]
                     },
@@ -192,7 +195,9 @@ class Device:
             except KeyboardInterrupt:
                 return
             except Exception as e:
-                self.log.info(e)
+                self.log.error("Exception received:")
+                self.log.error(e)
+                traceback.print_exception()
             time.sleep(int(self.__refresh_timeout__))
 
     def set_refresh_timeout(self, timeout):

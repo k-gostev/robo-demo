@@ -3,9 +3,10 @@ import time
 import json
 import traceback
 
+
 import config
 import threading
-import datetime
+from datetime import datetime
 
 from client.feature import Feature
 
@@ -19,6 +20,7 @@ from kortex_api.RouterClient import RouterClient, RouterClientSendOptions
 from kortex_api.SessionManager import SessionManager
 from kortex_api.autogen.messages import Session_pb2
 from kortex_api.UDPTransport import UDPTransport
+from kortex_api.autogen.messages.Common_pb2 import ArmState
 
 
 TIMEOUT_DURATION = 30
@@ -51,35 +53,49 @@ class Device:
             if "program_id" in message.value.keys():
                 program_id = message.value["program_id"]
 
-            base = BaseClient(DeviceConnection.create_tcp_connection())
+            device_conn = DeviceConnection(config.robot_hostname, credentials=(config.robot_username,
+                                                                              config.robot_password))
 
-            # Obtain sequences
-            sequence_list = base.ReadAllSequences()
-            sequence_handle = None
+            with device_conn as router:
+                base = BaseClient(router)
+                # Obtain sequences
+                sequence_list = base.ReadAllSequences()
+                sequence_handle = None
 
-            for sequence in sequence_list.sequence_list:
-                if sequence.name == SEQUENCE_NAME:
-                    sequence_handle = sequence.handle
+                if program_id == 1:
+                    sequence_name = "BoschRedCubes"
+                if program_id == 2:
+                    sequence_name = "BoschGreenCubes"
+                if program_id == 3:
+                    sequence_name = "BoschBlueCubes"
+                if program_id == 4:
+                    sequence_name = "BOSCHSleep"
 
-            if sequence_handle is None:
-                self.log.error("Can't reach sequence")
-                return "{\"status\": \" \"REQUEST FAILED " + "Can't reach sequence" + "\"}"
+                for sequence in sequence_list.sequence_list:
+                    if sequence.name == sequence_name:
+                        sequence_handle = sequence.handle
 
-            e = threading.Event()
-            notification_handle = base.OnNotificationActionTopic(
-                Device.check_for_sequence_end_or_abort(e),
-                Base_pb2.NotificationOptions()
-            )
+                self.log.info(sequence_list)
 
-            base.PlaySequence(sequence_handle)
+                if sequence_handle is None:
+                    self.log.error("Can't reach sequence")
+                    return "{\"status\": \" \"REQUEST FAILED " + "Can't reach sequence" + "\"}"
 
-            # Leave time to action to complete
-            finished = e.wait(TIMEOUT_DURATION)
-            base.Unsubscribe(notification_handle)
+                e = threading.Event()
+                notification_handle = base.OnNotificationSequenceInfoTopic(
+                    self.check_for_sequence_end_or_abort(e),
+                    Base_pb2.NotificationOptions()
+                )
 
-            if not finished:
-                print("Timeout on action notification wait")
-                return "{\"status\": \" \"REQUEST FAILED " + "Timeout" + "\"}"
+                base.PlaySequence(sequence_handle)
+
+                # Leave time to action to complete
+                finished = e.wait(TIMEOUT_DURATION)
+                base.Unsubscribe(notification_handle)
+
+                if not finished:
+                    print("Timeout on action notification wait")
+                    return "{\"status\": \" \"REQUEST FAILED " + "Timeout" + "\"}"
 
         except Exception as e:
             self.log.error(e)
@@ -96,19 +112,20 @@ class Device:
             (will be set when an END or ABORT occurs)
         """
 
-        def check(notification, e=e):
+        def check(notification, event=e):
             event_id = notification.event_identifier
             task_id = notification.task_index
             if event_id == Base_pb2.SEQUENCE_TASK_COMPLETED:
-                self.log.info("Sequence task {} completed".format(task_id))
+               pass
+               # self.log.info("Sequence task {} completed".format(task_id))
             elif event_id == Base_pb2.SEQUENCE_ABORTED:
-                self.log.error("Sequence aborted with error {}:{}".format(notification.abort_details,
-                                                                 Base_pb2.SubErrorCodes.
-                                                                 Name(notification.abort_details)))
-                e.set()
+                # self.log.error("Sequence aborted with error {}:{}".format(notification.abort_details,
+                #                                                  Base_pb2.SubErrorCodes.
+                #                                                  Name(notification.abort_details)))
+                event.set()
             elif event_id == Base_pb2.SEQUENCE_COMPLETED:
                 self.log.info("Sequence completed.")
-                e.set()
+                event.set()
 
         return check
 
@@ -127,40 +144,53 @@ class Device:
         while True:
             try:
                 session_info = Session_pb2.CreateSessionInfo()
-                session_info.username = config.robot_username
-                session_info.password = config.robot_password
+                session_info.username = config.robot_username_metrics
+                session_info.password = config.robot_password_metrics
                 session_info.session_inactivity_timeout = 60000  # (milliseconds)
                 session_info.connection_inactivity_timeout = 2000  # (milliseconds)
                 error_callback = lambda kException: \
                     self.log.error("_________ callback error _________ {}".format(kException))
-                self.log.info("Creating transport")
+                # self.log.info("Creating transport")
                 transport = UDPTransport()
                 router = RouterClient(transport, error_callback)
                 transport.connect(config.robot_hostname, int(config.robot_port_udp))
 
-                self.log.info("Creating session for communication")
+                # self.log.info("Creating session for communication")
                 session_manager = SessionManager(router)
                 session_manager.CreateSession(session_info)
-                self.log.info("Session created")
+                # self.log.info("Session created")
 
                 # Call some RPC which requires a session
                 cyclic = BaseCyclicClient(router)
                 feedback = cyclic.RefreshFeedback()
-                self.log.info("feedback received {}".format(feedback))
+                # self.log.info("feedback received {}".format(feedback))
                 session_manager.CloseSession()
                 transport.disconnect()
-
+                torque = []
+                angle = []
+                temperature = []
+                power = []
+                velocity = []
+                for a in feedback.actuators:
+                    angle.append(round(a.position, 1))
+                    temperature.append(round(a.temperature_motor, 1))
+                    power.append(round(a.voltage, 1))
+                    try:
+                        velocity.append(round(a.velocity, 1))
+                    except KeyError:
+                        velocity.append(0)
+                    if a.torque < 0:
+                        torque.append(round(a.torque, 1)*-1)
+                    else:
+                        torque.append(round(a.torque, 1))
 
                 content = {
                     'joints': {
-                        'angle': [10, 45, 70, 107, 30, 240],
-                        'velocity': [4.5, 2, 8, 3.6, 5.1, 7.9],
-                        'torque': [feedback.actuators[0].torque,
-                                   feedback.actuators[1].torque, feedback.actuators[2].torque,
-                                   feedback.actuators[3].torque, feedback.actuators[4].torque,
-                                   feedback.actuators[5].torque],
-                        'power': [3.5, 5, 8, 6.6, 7.1, 5.9],
-                        'temperature': [-5, 15, 30, 50, 65, 75]
+                        'angle': angle,
+                        'velocity': velocity,
+                        'torque': torque,
+                        'power': power,
+                        'temperature': temperature
                     },
                     'position': {
                         'robotSpace': {
@@ -179,8 +209,8 @@ class Device:
                         'safeguardStop': False,
                         'dmsEngaged': False
                     },
-                    'mode': 1,
-                    'state': 'WAITING',
+                    'mode': round(feedback.base.arm_voltage * feedback.base.arm_current, 1),
+                    'state': "{}".format(ArmState.Name(feedback.base.active_state)),
                     'bastionConnection': {
                         'status': '',
                         'secondsConnected': 0
@@ -190,14 +220,12 @@ class Device:
                     }
                 }
 
-                self.__feature__.set_properties(self.get_properties_content(content))
-
+                self.__feature__.set_properties(content)
+                self.log.info("Feedback sent: {}".format(content))
             except KeyboardInterrupt:
                 return
             except Exception as e:
-                self.log.error("Exception received:")
-                self.log.error(e)
-                traceback.print_exception()
+                self.log.exception("Exception received", e)
             time.sleep(int(self.__refresh_timeout__))
 
     def set_refresh_timeout(self, timeout):
@@ -206,6 +234,17 @@ class Device:
 
 class DeviceConnection:
     TCP_PORT = 10000
+
+    def __init__(self, ip_address, port=TCP_PORT, credentials=("", "")):
+        self.ipAddress = ip_address
+        self.port = port
+        self.credentials = credentials
+
+        self.sessionManager = None
+
+        # Setup API
+        self.transport = TCPTransport() if port == DeviceConnection.TCP_PORT else UDPTransport()
+        self.router = RouterClient(self.transport, RouterClient.basicErrorCallback)
 
     @staticmethod
     def create_tcp_connection():

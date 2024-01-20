@@ -10,6 +10,9 @@ WORKDIR /app
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 
+COPY lib/kortex_api-2.6.0.post3-py3-none-any.whl lib/kortex_api-2.6.0.post3-py3-none-any.whl
+RUN python3 -m pip install ./lib/kortex_api-2.6.0.post3-py3-none-any.whl
+
 COPY lib/ditto-clients ditto-clients-python
 RUN cd ditto-clients-python && make install
 

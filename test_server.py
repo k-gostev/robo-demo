@@ -43,11 +43,11 @@ class MyServer(BaseHTTPRequestHandler):
     def get_mock_content(self):
         content = {
             'joints': {
-                'angle': [45, 45, 45, 45, 45, 45],
-                'velocity': None,
+                'angle': [10, 45, 70, 107, 30, 240],
+                'velocity': [4.5, 2, 8, 3.6, 5.1, 7.9],
                 'torque': None,
-                'power': [5.5, 5, 5, 6.6, 7.1, 5.9],
-                'temperature': [30, 30, 30, 30, 30, 30]
+                'power': [3.5, 5, 8, 6.6, 7.1, 5.9],
+                'temperature': [-5, 15, 30, 50, 65, 75]
             },
             'position': {
                 'robotSpace': {

@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 
 hostName = "localhost"
-serverPort = 3000
+serverPort = 3001
 
 
 class MyServer(BaseHTTPRequestHandler):

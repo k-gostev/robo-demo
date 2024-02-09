@@ -1,3 +1,5 @@
+import json
+
 from ditto.client import Client
 from ditto.model.feature import Feature
 from ditto.model.namespaced_id import NamespacedID
@@ -42,12 +44,14 @@ class DittoClient(Client):
         print("request_id: {}, envelope: {}".format(request_id, message.to_ditto_dict()))
 
         # create an example outbox message and reply
-        live_message = Message(NamespacedID().from_string(self.__feature__.get_namespace_id())).outbox(message.topic.action).with_payload(
-            dict(status=self.__message_handler__.on_message(request_id, message))).feature(self.__feature__.get_name())
-
+        resp = dict(self.__message_handler__.on_message(request_id, message))
+        live_message = Message(NamespacedID().from_string(self.__feature__.get_namespace_id()))\
+            .outbox(message.topic.action).feature(self.__feature__.get_name())
         # generate the respective Envelope
         response_envelope = live_message.envelope(correlation_id=message.headers.correlation_id,
-                                                  response_required=False).with_status(204)
+                                                  content_type="application/json")\
+            .with_status(200)\
+            .with_value(resp)
         # send the reply
         self.reply(request_id, response_envelope)
         print("reply sent")

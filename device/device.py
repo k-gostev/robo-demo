@@ -41,13 +41,13 @@ class Device:
             self.log.info("POST STATUS CODE " + str(r.status_code))
             self.log.info(r.headers)
             if r.status_code < 200 or r.status_code > 299:
-                return "{\"status\": \" \"REQUEST FAILED " + str(r.status_code) + "\"}"
+                return json.loads('{"status":"Request failed with code: {}"}'.format(r.status_code))
 
         except Exception as e:
             self.log.error(e)
-            return "{\"status\": \"FAILED WITH EXCEPTION\"}"
+            return json.loads('{"status":"Request failed with exception", "message", "{}"}'.format(e))
 
-        return '{\"status: \"SUCCESS\"}'
+        return json.loads('{"status":"SUCCESS"}')
 
     def run(self):
         t = Thread(target=self.refresh_state)
